@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 import { IWallet, ServiceResponse, ValidationResult } from "../types";
 import { Wallet } from "../models/Wallet";
+import { IWalletValidator } from "./interface/IWalletValidator";
 
-export class WalletValidator{
+export class WalletValidator implements IWalletValidator{
 
      validateAmount(amount: any): ValidationResult {
         if (amount === undefined || amount === null) {

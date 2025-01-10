@@ -1,4 +1,4 @@
-import { IUser, ServiceResponse } from "../../types";
+import { ServiceResponse } from "../../types";
 
 export interface IAuthService {
   register(userData: {
