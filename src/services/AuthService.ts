@@ -17,7 +17,7 @@ export class AuthService implements IAuthService {
 
       return {
         status: 201,
-        data: { user, token }
+        data: { token }
       };
     } catch (error: any) {
       return {
@@ -49,7 +49,7 @@ export class AuthService implements IAuthService {
 
       return {
         status: 200,
-        data: { user, token }
+        data: { token }
       };
     } catch (error: any) {
       return {

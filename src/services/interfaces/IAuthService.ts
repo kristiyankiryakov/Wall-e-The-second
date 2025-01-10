@@ -4,10 +4,10 @@ export interface IAuthService {
   register(userData: {
     username: string;
     password: string;
-  }): Promise<ServiceResponse<{ user: IUser; token: string }>>;
+  }): Promise<ServiceResponse<{ token: string }>>;
   
   login(credentials: {
     username: string;
     password: string;
-  }): Promise<ServiceResponse<{ user: IUser; token: string }>>;
+  }): Promise<ServiceResponse<{ token: string }>>;
 }
