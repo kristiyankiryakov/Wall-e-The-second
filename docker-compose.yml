@@ -1,22 +1,22 @@
 version: '3.8'
+
 services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongodb
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/digital-wallet
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
   mongodb:
     image: mongo:latest
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/digital-wallet
+      - NODE_ENV=development
+    depends_on:
+      - mongodb
 
 volumes:
   mongodb_data:

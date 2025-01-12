@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { JWTPayload } from '../types';
 import { IAuthService } from './interfaces/IAuthService';
+import {config} from "../config/index";
 
 export class AuthService implements IAuthService {
   
@@ -60,7 +61,7 @@ export class AuthService implements IAuthService {
   }
 
   private generateToken(payload: JWTPayload): string {
-    return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: '24h' });
+    return jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
   }
 
   private async throwIfUserExists(userData:{ username: string; password: string }){

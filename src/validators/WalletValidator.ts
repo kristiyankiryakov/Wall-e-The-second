@@ -67,7 +67,6 @@ export class WalletValidator implements IWalletValidator{
         const errorMessages: { [key: string]: { status: number; message: string } } = {
           'Insufficient funds': { status: 400, message: 'Insufficient funds' },
           'Transaction amount must be positive': { status: 400, message: 'Transaction amount must be positive' },
-          'Wallet with this name already exists for this user': { status: 400, message: 'Wallet with this name already exists for this user' }
         };
     
         const errorInfo = errorMessages[error.message] || { status: 500, message: 'Internal server error' };

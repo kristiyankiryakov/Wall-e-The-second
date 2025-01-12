@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { WalletService } from '../services/WalletService';
-import { WalletValidator } from '../validators/WalletValidator';
+import { IWalletService } from '../services/interfaces/IWalletService';
+import container from '../container';
 
-const walletValidator = new WalletValidator();
-const walletService = new WalletService(walletValidator);
+const walletService = container.get<IWalletService>('walletService');
 
 export const createWallet = async (req: Request, res: Response) => {
+
   const response = await walletService.createWallet(req.user!.userId, req.body.name);
   return res.status(response.status).json(response.error ? { error: response.error } : response.data);
 };

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { JWTPayload } from '../types';
+import { config } from '../config';
 
 declare global {
   namespace Express {
@@ -18,7 +19,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
       throw new Error('No token provided');
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
     req.user = decoded;
     next();
   } catch (error) {

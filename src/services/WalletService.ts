@@ -1,14 +1,11 @@
-import mongoose from 'mongoose';
 import { Wallet } from '../models/Wallet';
 import { IWallet, ServiceResponse } from '../types';
-import { IWalletService } from './interfaces/IWalletService';
 import { WalletValidator } from '../validators/WalletValidator';
+import { IWalletService } from './interfaces/IWalletService';
 
 export class WalletService implements IWalletService {
 
-  private walletValidator: WalletValidator;
-
-  constructor(walletValidator: WalletValidator) {
+  constructor(private walletValidator: WalletValidator) {
     this.walletValidator = walletValidator;
   }
 
@@ -17,6 +14,15 @@ export class WalletService implements IWalletService {
       return {
         status: 400,
         error: 'Wallet name is required'
+      };
+    }
+
+    const existingWallet = await Wallet.findOne( { name } );
+
+    if(existingWallet){
+      return {
+        status: 400,
+        error: `Wallet with name ${name} already exists.`
       };
     }
 
