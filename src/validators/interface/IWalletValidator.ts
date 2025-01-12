@@ -5,7 +5,8 @@ export interface IWalletValidator{
 
  validateAmount(amount: any): ValidationResult;
 
- validateAndFindWallet(userId: string, walletId: string): Promise<ServiceResponse<IWallet>>;
+ validateWalletName(name: string): ValidationResult;
 
- handleServiceError(error: any): ServiceResponse<any>;
+ checkWalletNameExists(name: string): Promise<ValidationResult>;
+
 }

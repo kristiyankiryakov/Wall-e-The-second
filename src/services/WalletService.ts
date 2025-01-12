@@ -1,5 +1,7 @@
+import mongoose from 'mongoose';
 import { Wallet } from '../models/Wallet';
 import { IWallet, ServiceResponse } from '../types';
+import { ErrorHandler } from '../utility/ErrorHandler';
 import { WalletValidator } from '../validators/WalletValidator';
 import { IWalletService } from './interfaces/IWalletService';
 
@@ -10,121 +12,135 @@ export class WalletService implements IWalletService {
   }
 
   async createWallet(userId: string, name: string): Promise<ServiceResponse<IWallet>> {
-    if (!name?.trim()) {
-      return {
-        status: 400,
-        error: 'Wallet name is required'
-      };
-    }
+    try {
+    
+      const nameValidation = this.walletValidator.validateWalletName(name);
+      if (!nameValidation.isValid) return nameValidation.error!;
 
-    const existingWallet = await Wallet.findOne( { name } );
+      const nameExists = await this.walletValidator.checkWalletNameExists(name);
+      if (!nameExists.isValid) return nameExists.error!;
 
-    if(existingWallet){
-      return {
-        status: 400,
-        error: `Wallet with name ${name} already exists.`
-      };
-    }
-
-    return this.walletValidator.executeWalletOperation(async () => {
-      const wallet = new Wallet({ userId, name: name.trim(), balance: 0 });
-      await wallet.save();
+      const wallet = await this.performWalletCreation(userId, name);
+     
       return {
         status: 201,
         data: wallet
       };
-    });
+
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
   }
 
+  private async performWalletCreation(userId:string, name:string):Promise<IWallet>{
+    const wallet = new Wallet({ userId, name: name.trim(), balance: 0 });
+    await wallet.save();
+
+    return wallet;
+  }
+
+
   async getWallets(userId: string): Promise<ServiceResponse<IWallet[]>> {
-    return this.walletValidator.executeWalletOperation(async () => {
+    try {
       const wallets = await Wallet.find({ userId });
       return {
         status: 200,
         data: wallets
       };
-    });
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
   }
+
   async getWallet(userId: string, walletId: string): Promise<ServiceResponse<IWallet>> {
-    return this.walletValidator.executeWalletOperation(() => this.walletValidator.validateAndFindWallet(userId, walletId));
+    try {
+
+      return await this.findWallet(userId, walletId);
+   
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
   }
 
   async deposit(userId: string, walletId: string, amount: any): Promise<ServiceResponse<{ balance: number }>> {
+
     const amountValidation = this.walletValidator.validateAmount(amount);
-    if (!amountValidation.isValid) {
-      return amountValidation.error!;
-    }
+    if (!amountValidation.isValid) return amountValidation.error!;
 
-    return this.walletValidator.executeWalletOperation(async () => {
-      const walletResponse = await this.walletValidator.validateAndFindWallet(userId, walletId);
-      if (walletResponse.error) {
-        return walletResponse as ServiceResponse<{ balance: number }>;
-      }
-
-      const wallet = walletResponse.data!;
-   
-      this.processDeposit(wallet, amount);
-
-      await wallet.save();
-      return {
-        status: 200,
-        data: { balance: wallet.balance }
-      };
-    });
-  }
-
-  private processDeposit(wallet:IWallet, amount:number): void {
-    wallet.balance += amount;
-    
-    wallet.transactions.push({
-      type: 'deposit',
-      amount,
-      timestamp: new Date()
-    });
-    
-  }
-
-  async withdraw(userId: string, walletId: string, amount: any): Promise<ServiceResponse<{ balance: number }>> {
-    const amountValidation = this.walletValidator.validateAmount(amount);
-    if (!amountValidation.isValid) {
-      return amountValidation.error!;
-    }
-
-    return this.walletValidator.executeWalletOperation(async () => {
-      const walletResponse = await this.walletValidator.validateAndFindWallet(userId, walletId);
-      if (walletResponse.error) {
-        return walletResponse as ServiceResponse<{ balance: number }>;
-      }
+    try {
+      
+      const walletResponse = await this.findWallet(userId, walletId);
+      if (walletResponse.error) return walletResponse as ServiceResponse<{ balance: number }>;
 
       const wallet = walletResponse.data!;
       const numberAmount = Number(amount);
-      
+
+      await this.performDeposit(wallet, numberAmount);
+      return { status: 200, data: { balance: wallet.balance } };
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
+  }
+
+  private async performDeposit(wallet:IWallet, amount:number): Promise<void> {
+    wallet.balance += amount;
+    
+    wallet.transactions.push({ type: 'deposit', amount,timestamp: new Date()});
+    
+    await wallet.save();
+  }
+
+  async withdraw(userId: string, walletId: string, amount: any): Promise<ServiceResponse<{ balance: number }>> {
+
+    const amountValidation = this.walletValidator.validateAmount(amount);
+    if (!amountValidation.isValid) return amountValidation.error!;
+
+    try {
+
+      const walletResponse = await this.findWallet(userId, walletId);
+      if (walletResponse.error) return walletResponse as ServiceResponse<{ balance: number }>;
+
+
+      const wallet = walletResponse.data!;
+      const numberAmount = Number(amount);
+
       if (wallet.balance < numberAmount) {
-        return {
-          status: 400,
-          error: 'Insufficient funds'
-        };
+        return { status: 400, error: 'Insufficient funds' };
       }
 
-     this.processWithdraw(wallet, numberAmount);
-
-      await wallet.save();
-      return {
-        status: 200,
-        data: { balance: wallet.balance }
-      };
-    });
+      await this.performWithdrawal(wallet, numberAmount);
+      return { status: 200, data: { balance: wallet.balance } };
+    } catch (error) {
+      return ErrorHandler.handleError(error);
+    }
   }
 
-  private processWithdraw(wallet:IWallet, amount:number):void{
+  private async performWithdrawal(wallet: IWallet, amount: number): Promise<void> {
     wallet.balance -= amount;
-
-    wallet.transactions.push({
-      type: 'withdraw',
-      amount,
-      timestamp: new Date()
-    });
+    wallet.transactions.push({ type: 'withdraw', amount, timestamp: new Date() });
+    await wallet.save();
   }
 
+  private async findWallet(userId: string, walletId: string): Promise<ServiceResponse<IWallet>> {
+    if (!mongoose.Types.ObjectId.isValid(walletId)) {
+      return {
+        status: 400,
+        error: 'Invalid wallet ID format'
+      };
+    }
+
+    const wallet = await Wallet.findOne({ _id: walletId, userId });
+    if (!wallet) {
+      return {
+        status: 404,
+        error: 'Wallet not found'
+      };
+    }
+
+    return {
+      status: 200,
+      data: wallet
+    };
+  }
   
 }

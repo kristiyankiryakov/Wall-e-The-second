@@ -6,4 +6,5 @@ export interface IWalletService {
   getWallet(userId: string, walletId: string): Promise<ServiceResponse<IWallet>>;
   deposit(userId: string, walletId: string, amount: number): Promise<ServiceResponse<{ balance: number }>>;
   withdraw(userId: string, walletId: string, amount: number): Promise<ServiceResponse<{ balance: number }>>;
+
 }

@@ -40,50 +40,31 @@ export class WalletValidator implements IWalletValidator{
         return { isValid: true };
       }
 
-
-       async validateAndFindWallet(userId: string, walletId: string): Promise<ServiceResponse<IWallet>> {
-        if (!mongoose.Types.ObjectId.isValid(walletId)) {
+      public validateWalletName(name: string): ValidationResult {
+        if (!name?.trim()) {
           return {
-            status: 400,
-            error: 'Invalid wallet ID format'
+            isValid: false,
+            error: {
+              status: 400,
+              error: 'Wallet name is required'
+            }
           };
         }
-    
-        const wallet = await Wallet.findOne({ _id: walletId, userId });
-        if (!wallet) {
+        return { isValid: true };
+      }
+
+      async checkWalletNameExists(name: string): Promise<ValidationResult> {
+        const existingWallet = await Wallet.findOne({ name: name.trim() });
+        if (existingWallet) {
           return {
-            status: 404,
-            error: 'Wallet not found'
+            isValid: false,
+            error: {
+              status: 400,
+              error: `Wallet with such name already exists.`
+            }
           };
         }
-    
-        return {
-          status: 200,
-          data: wallet
-        };
+        return { isValid: true };
       }
-
-       handleServiceError(error: any): ServiceResponse<any> {
-        const errorMessages: { [key: string]: { status: number; message: string } } = {
-          'Insufficient funds': { status: 400, message: 'Insufficient funds' },
-          'Transaction amount must be positive': { status: 400, message: 'Transaction amount must be positive' },
-        };
-    
-        const errorInfo = errorMessages[error.message] || { status: 500, message: 'Internal server error' };
-        
-        return {
-          status: errorInfo.status,
-          error: errorInfo.message
-        };
-      }
-
-       async executeWalletOperation<T>( operation: () => Promise<ServiceResponse<T>>): Promise<ServiceResponse<T>> {
-        try {
-          return await operation();
-        } catch (error: any) {
-          return this.handleServiceError(error);
-        }
-      }
-
 
 }
